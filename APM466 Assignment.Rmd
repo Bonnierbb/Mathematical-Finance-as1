@@ -1,0 +1,256 @@
+---
+title: "APM466 Assignment 1"
+author: "BW7123"
+date: "2/4/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 2.1 Fundamental Question
+### 1.(a) 
+When the government issue bonds, it will not cause inflation and control money supply; however, if government is choosing to print money, it will cause inflation and devalue the money of people who already have saved or invested. 
+
+### 1.(b)
+Suppose that money lenders would worry that loaning their money will have a lower interest rate and less demand for borrowing in the future, so they decide to loan their money today or decrease the interest rate in the future which will cause a recession which could increase the short term yield rate and decrease the long term rate which let the the yield curve be flatten.
+
+### 1.(c)
+Quantitative easing is a monetary policy strategy that US Fed buy long-term securities from banks in order to decrease the interest rate, increase the money supply and stimulate market and economic during the COVID-19 pandemic.
+
+### 2. 
+I would like to construct a yield a "0-5 year" yield and spot curves, so the 10 bonds which I selected have the maturity date from Feburary 28th 2022 to Feb 28th 2027(in 5 years). Also, each of these bonds will be in the market for more than 5 years and the coupon rate on these bonds do not differ much. Most of the bonds have the maturity date on Feburary 28th or August 31th. Since these 10 bonds are paid semiannually, it is convenient for further calculation. 
+CAN 0.50 Feb 28 2022, CAN 1.75 Feb 28 2023, CAN 2.25 Feb 29 2024, CAN 2.50 May 31 2024, CAN 1.50 Aug 31 2024, CAN 1.25 Feb 28 2025, CAN 0.50 Aug 31 2025, CAN 0.25 Feb 28 2026, CAN 1.00 Aug 31 2026, CAN 1.25 Feb 28 2027
+
+### 3.
+The Principal Component Analysis states that reducing the number of variables while preserving as much as possible for a data set. The variance of the process includes model building with the most important information. Since the eigenvectors of the covariance matrix are the directions of the axes where there is the most important information and that we call Principal Components. And eigenvalues are the amount of variance which are carried in each Principal Component. We could rank the eigenvectors from large number to small number based on the eigenvalues information. For example, students want to know how to get a higher gpa, after making the survey, study hard is the most important factor, second is keep health, and third is...etc. 
+
+
+
+## 2.2 Empirical Questions
+
+### 4.(a)
+To calculate the yield to maturity on my 10 selected bond, first I collected Janurary 10th to Janurary 21st(10 weekdays) bond clean price, and used Dirty Price = accrued interest + clean price to get the dirty price for each day. Then I used the formula $$P_n=\sum{i=1}^{n} P_i(1+r/n)^{-(t_i)/n} \$$
+```{r}
+library(Quandl)
+library(readxl)
+bond <- read_excel("bond data YTM.xlsx", sheet="Sheet1")
+View(bond)
+
+bond_date <- c("2022-01-10","2022-01-11","2022-01-12","2022-01-13","2022-01-14","2022-01-17","2022-01-18","2022-01-19","2022-01-20","2022-01-21")
+
+bond_ytm_matrix <-matrix(c(bond$'2022.01.10', bond$'2022.01.11',bond$'2022.01.12',bond$'2022.01.13',bond$'2022.01.14',bond$'2022.01.17',bond$'2022.01.18',bond$'2022.01.19',bond$'2022.01.20',bond$'2022.01.21'),nrow=10, ncol=10,byrow=TRUE)
+
+```
+
+
+```{r}
+year <- c(0.5,1,1.5,2,2.5,3,3.5,4,4.5,5)
+plot(year,bond_ytm_matrix[1,],type="o",xlab="Time to Maturity", ylab="YTM",col="black", ylim=c(0.004,0.018), main="Yield Curve of 10 Selected Bond SW-7123",lwd=1)
+lines(year, bond_ytm_matrix[2,],type="o", col="green",lwd=1)
+lines(year, bond_ytm_matrix[3,],type="o",col="red", lwd=1)
+lines(year, bond_ytm_matrix[4,],type="o",col="blue", lwd=1)
+lines(year, bond_ytm_matrix[5,],type="o",col="orange", lwd=1)
+lines(year, bond_ytm_matrix[6,],type="o",col="pink", lwd=1)
+lines(year, bond_ytm_matrix[7,],type="o",col="purple", lwd=1)
+lines(year, bond_ytm_matrix[8,],type="o",col="grey", lwd=1)
+lines(year, bond_ytm_matrix[9,],type="o",col="light blue", lwd=1)
+lines(year, bond_ytm_matrix[10,],type="o",col="navy", lwd=1)
+legend("bottomright",legend=c("01/10/2022","01/11/2022","01/12/2022","01/13/2022","01/14/2022","01/17/2022","01/18/2022","01/19/2022","01/20/2022","01/21/2022"),col=c("black","green","red","blue","orange","pink","purple","grey","light blue","navy"),lty=1.5,cex=0.8)
+
+```
+
+
+### 4.(b)
+```{r}
+library(Quandl)
+library(readxl)
+bond_data_dirty_price <- read_excel("bond data dirty price.xlsx")
+
+bond_dp_matrix <- matrix(c(bond_data_dirty_price$'2022.01.10',bond_data_dirty_price$'2022.01.11',bond_data_dirty_price$'2022.01.12',bond_data_dirty_price$'2022.01.13',bond_data_dirty_price$'2022.01.14',bond_data_dirty_price$'2022.01.17',bond_data_dirty_price$'2022.01.18',bond_data_dirty_price$'2022.01.19',bond_data_dirty_price$'2022.01.20',bond_data_dirty_price$'2022.01.21'),nrow=10, ncol=10,byrow=TRUE)
+View(bond_dp_matrix)
+```
+
+```{r}
+library(jrvFinance)
+library(lubridate)
+coupon_payment <- as.numeric(bond_data_dirty_price$Coupon)
+maturity_date <- bond_data_dirty_price$`Maturity Date`
+
+cf_1 = c(100.25)
+cf_2 = c(0.875, 100.875)
+cf_3 = c(1.125,1.125,101.125)
+cf_4 = c(1.25,1.25,1.25,101.25)
+cf_5 = c(0.75,0.75,0.75,0.75,100.75)
+cf_6 = c(0.625,0.625,0.625,0.625,0.625,100.625)
+cf_7 = c(0.25,0.25,0.25,0.25,0.25,0.25,100.25)
+cf_8 = c(0.125,0.125,0.125,0.125,0.125,0.125,0.125,100.125)
+cf_9 = c(0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,100.5)
+cf_10 = c(0.625,0.625,0.625,0.625,0.625,0.625,0.625,0.625,0.625,100.625)
+
+spot_curve_matrix1 <- matrix(nrow=10,ncol=10)
+
+for(i in 1:10){
+  
+  sr_1 = function(x) as.numeric(bond_dp_matrix[i,1]-cf_1[1]*(1+x/2)^(-2*0.5))
+  s_1 = uniroot(sr_1, c(0,1))$root
+  
+  sr_2 = function(x) as.numeric(bond_dp_matrix[i,2]-cf_2[1]*(1+s_1/2)^(-2*(1-0.5*1))-cf_2[2]*(1+x/2)^(-2*1))
+  s_2 = uniroot(sr_2, c(0,1))$root
+  
+  sr_3 = function(x) as.numeric(bond_dp_matrix[i,3]-cf_3[1]*(1+s_1/2)^(-2*(2-0.5*2))-cf_3[2]*(1+s_2/2)^(-2*(2-0.5*1))-cf_3[3]*(1+x/2)^(-2*2))
+  s_3 = uniroot(sr_3, c(0,1))$root
+  
+  sr_4 = function(x) as.numeric(bond_dp_matrix[i,4]-cf_4[1]*(1+s_1/2)^(-2*(2.3-0.5*3))-cf_4[2]*(1+s_2/2)^(-2*(2.3-0.5*2))-cf_4[3]*(1+s_3/2)^(-2*(2.3-0.5*1))-cf_4[4]*(1+x/2)^(-2*2.3))
+  s_4 = uniroot(sr_4, c(0,1))$root
+  
+  sr_5 = function(x) as.numeric(bond_dp_matrix[i,5]-cf_5[1]*(1+s_1/2)^(-2*(2.5-0.5*4))-cf_5[2]*(1+s_2/2)^(-2*(2.5-0.5*3))-cf_5[3]*(1+s_3/2)^(-2*(2.5-0.5*2))-cf_5[4]*(1+s_4/2)^(-2*(2.5-0.5*1))-cf_5[5]*(1+x/2)^(-2*2.5))
+  s_5 = uniroot(sr_5, c(0,1))$root
+  
+  sr_6 = function(x) as.numeric(bond_dp_matrix[i,6]-cf_6[1]*(1+s_1/2)^(-2*(3-0.5*5))-cf_6[2]*(1+s_2/2)^(-2*(3-0.5*4))-cf_6[3]*(1+s_3/2)^(-2*(3-0.5*3))-cf_6[4]*(1+s_4/2)^(-2*(3-0.5*2))-cf_6[5]*(1+s_5/2)^(-2*(3-0.5*1))-cf_6[6]*(1+x/2)^(-2*3))
+  s_6 = uniroot(sr_6, c(0,1))$root
+  
+  sr_7 = function(x) as.numeric(bond_dp_matrix[i,7]-cf_7[1]*(1+s_1/2)^(-2*(3.5-0.5*6))-cf_7[2]*(1+s_2/2)^(-2*(3.5-0.5*5))-cf_7[3]*(1+s_3/2)^(-2*(3.5-0.5*4))-cf_7[4]*(1+s_4/2)^(-2*(3.5-0.5*3))-cf_7[5]*(1+s_5/2)^(-2*(3.5-0.5*2))-cf_7[6]*(1+s_6/2)^(-2*(3.5-0.5*1))-cf_7[7]*(1+x/2)^(-2*3.5))
+  s_7 = uniroot(sr_7, c(0,1))$root
+  
+  sr_8 = function(x) as.numeric(bond_dp_matrix[i,8]-cf_8[1]*(1+s_1/2)^(-2*(4-0.5*7))-cf_8[2]*(1+s_2/2)^(-2*(4-0.5*6))-cf_8[3]*(1+s_3/2)^(-2*(4-0.5*5))-cf_8[4]*(1+s_4/2)^(-2*(4-0.5*4))-cf_8[5]*(1+s_5/2)^(-2*(4-0.5*3))-cf_8[6]*(1+s_6/2)^(-2*(4-0.5*2))-cf_8[7]*(1+s_7/2)^(-2*(4-0.5*1))-cf_8[8]*(1+x/2)^(-2*4))
+  s_8 = uniroot(sr_8, c(0,1))$root
+  
+  sr_9 = function(x) as.numeric(bond_dp_matrix[i,9]-cf_9[1]*(1+s_1/2)^(-2*(4.5-0.5*8))-cf_9[2]*(1+s_2/2)^(-2*(4.5-0.5*7))-cf_9[3]*(1+s_3/2)^(-2*(4.5-0.5*6))-cf_9[4]*(1+s_4/2)^(-2*(4.5-0.5*5))-cf_9[5]*(1+s_5/2)^(-2*(4.5-0.5*4))-cf_9[6]*(1+s_6/2)^(-2*(4.5-0.5*3))-cf_9[7]*(1+s_7/2)^(-2*(4.5-0.5*2))-cf_9[8]*(1+s_8/2)^(-2*(4.5-0.5*1))-cf_9[9]*(1+x/2)^(-2*4.5))
+  s_9 = uniroot(sr_9, c(0,1))$root
+  
+  sr_10 = function(x) as.numeric(bond_dp_matrix[i,10]-cf_10[1]*(1+s_1/2)^(-2*(5-0.5*9))-cf_10[2]*(1+s_2/2)^(-2*(5-0.5*8))-cf_10[3]*(1+s_3/2)^(-2*(5-0.5*7))-cf_10[4]*(1+s_4/2)^(-2*(5-0.5*6))-cf_10[5]*(1+s_5/2)^(-2*(5-0.5*5))-cf_10[6]*(1+s_6/2)^(-2*(5-0.5*4))-cf_10[7]*(1+s_7/2)^(-2*(5-0.5*3))-cf_10[8]*(1+s_8/2)^(-2*(5-0.5*2))-cf_10[9]*(1+s_9/2)^(-2*(5-0.5*1))-cf_10[10]*(1+x/2)^(-2*5))
+  s_10 = uniroot(sr_10, c(0,1))$root
+  
+  spot_curve_matrix1[i,1] <- s_1
+  spot_curve_matrix1[i,2] <- s_2
+  spot_curve_matrix1[i,3] <- s_3 
+  spot_curve_matrix1[i,4] <- s_4
+  spot_curve_matrix1[i,5] <- s_5
+  spot_curve_matrix1[i,6] <- s_6
+  spot_curve_matrix1[i,7] <- s_7
+  spot_curve_matrix1[i,8] <- s_8
+  spot_curve_matrix1[i,9] <- s_9
+  spot_curve_matrix1[i,10] <- s_10
+}
+
+```
+
+```{r}
+year <- c(0.5,1,1.5,2,2.5,3,3.5,4,4.5,5)
+plot(year,spot_curve_matrix1[1,],type="o",xlab="Time to Maturity", ylab="Spot rate",ylim=c(0.004,0.018),col="black", main="Spot Curve of 10 Selected Bond SW-7123",lwd=1)
+lines(year, spot_curve_matrix1[2,],type="o", col="green",lwd=1)
+lines(year, spot_curve_matrix1[3,],type="o",col="red", lwd=1)
+lines(year, spot_curve_matrix1[4,],type="o",col="blue", lwd=1)
+lines(year, spot_curve_matrix1[5,],type="o",col="orange", lwd=1)
+lines(year, spot_curve_matrix1[6,],type="o",col="pink", lwd=1)
+lines(year, spot_curve_matrix1[7,],type="o",col="purple", lwd=1)
+lines(year, spot_curve_matrix1[8,],type="o",col="grey", lwd=1)
+lines(year, spot_curve_matrix1[9,],type="o",col="light blue", lwd=1)
+lines(year, spot_curve_matrix1[10,],type="o",col="navy", lwd=1)
+legend("bottomright",legend=c("01/10/2022","01/11/2022","01/12/2022","01/13/2022","01/14/2022","01/17/2022","01/18/2022","01/19/2022","01/20/2022","01/21/2022"),col=c("black","green","red","blue","orange","pink","purple","grey","light blue","navy"),lty=1.5,cex=0.8)
+
+```
+
+
+### 4.(c)
+
+```{r}
+select_spot_year=spot_curve_matrix1[,c(2,3,6,8,10)]
+forward_matrix <- matrix(nrow=10,ncol=4)
+for(i in 1:10){
+  
+  fr_1 = function(x) as.numeric((1+x/2)^2*(1+select_spot_year[i,1])^2-(1+select_spot_year[i,2])^4)
+  fm_1 = uniroot(fr_1, c(0,1))$root
+  
+  fr_2 = function(x) as.numeric((1+x/2)^4*(1+select_spot_year[i,2])^2-(1+select_spot_year[i,3])^6)
+  fm_2 = uniroot(fr_2, c(0,1))$root
+  
+  fr_3 = function(x) as.numeric((1+x/2)^6*(1+select_spot_year[i,3])^2-(1+select_spot_year[i,4])^8)
+  fm_3 = uniroot(fr_3, c(0,1))$root
+  
+  fr_4 = function(x) as.numeric((1+x/2)^8*(1+select_spot_year[i,4])^2-(1+select_spot_year[i,5])^10)
+  fm_4 = uniroot(fr_4, c(0,1))$root
+  
+  forward_matrix[i,1] <- fm_1
+  forward_matrix[i,2] <- fm_2
+  forward_matrix[i,3] <- fm_3
+  forward_matrix[i,4] <- fm_4
+}
+  
+```
+
+
+```{r}
+year1 <- c(1,2,3,4)
+plot(year1,forward_matrix[1,],type="o",xlab="Time to Maturity", ylab="Forward Rate",col="black",ylim=c(0.004,0.04), main="Forward Curve of 10 Selected Bond SW-7123",lwd=1)
+lines(year1, forward_matrix[2,],type="o", col="green",lwd=1)
+lines(year1, forward_matrix[3,],type="o",col="red", lwd=1)
+lines(year1, forward_matrix[4,],type="o",col="blue", lwd=1)
+lines(year1, forward_matrix[5,],type="o",col="orange", lwd=1)
+lines(year1, forward_matrix[6,],type="o",col="pink", lwd=1)
+lines(year1, forward_matrix[7,],type="o",col="purple", lwd=1)
+lines(year1, forward_matrix[8,],type="o",col="grey", lwd=1)
+lines(year1, forward_matrix[9,],type="o",col="light blue", lwd=1)
+lines(year1, forward_matrix[10,],type="o",col="navy", lwd=1)
+legend("bottomright",legend=c("01/10/2022","01/11/2022","01/12/2022","01/13/2022","01/14/2022","01/17/2022","01/18/2022","01/19/2022","01/20/2022","01/21/2022"),col=c("black","green","red","blue","orange","pink","purple","grey","light blue","navy"),lty=1.5,cex=0.8)
+
+```
+
+### 5.
+```{r}
+bond_ytm_logmatrix <- matrix(nrow=9,ncol=5)
+for(i in 1:9){
+  bond_ytm_logmatrix[i,1] <- log(bond_ytm_matrix[i+1,1]/bond_ytm_matrix[i,1])
+  bond_ytm_logmatrix[i,2] <- log(bond_ytm_matrix[i+1,2]/bond_ytm_matrix[i,2])
+  bond_ytm_logmatrix[i,3] <- log(bond_ytm_matrix[i+1,3]/bond_ytm_matrix[i,3])
+  bond_ytm_logmatrix[i,4] <- log(bond_ytm_matrix[i+1,4]/bond_ytm_matrix[i,4])
+  bond_ytm_logmatrix[i,5] <- log(bond_ytm_matrix[i+1,5]/bond_ytm_matrix[i,5])
+  
+}
+
+```
+```{r}
+cov_ytm_matrix <- cov(bond_ytm_logmatrix,bond_ytm_logmatrix)
+print(cov_ytm_matrix)
+```
+
+```{r}
+forward_logmatrix <- matrix(nrow=9, ncol=4)
+for(i in 1:9){
+  forward_logmatrix[i,1] <- log(forward_matrix[i+1,1]/forward_matrix[i,1])
+  forward_logmatrix[i,2] <- log(forward_matrix[i+1,2]/forward_matrix[i,2])
+  forward_logmatrix[i,3] <- log(forward_matrix[i+1,3]/forward_matrix[i,3])
+  forward_logmatrix[i,4] <- log(forward_matrix[i+1,4]/forward_matrix[i,4])
+ 
+}
+
+```
+```{r}
+cov_forward_matrix <- cov(forward_logmatrix,forward_logmatrix)
+print(cov_forward_matrix)
+```
+
+
+
+
+### 6
+```{r}
+print(eigen(cov_ytm_matrix)$values)
+print(eigen(cov_ytm_matrix)$vectors)
+```
+
+```{r}
+print(eigen(cov_forward_matrix)$values)
+print(eigen(cov_forward_matrix)$vectors)
+```
+
+
+
+
+
+
+
